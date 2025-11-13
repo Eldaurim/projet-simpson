@@ -336,16 +336,43 @@ async function loadAllData(type) {
     return allData;
 }
 
-// Télécharger une image en blob
-async function downloadImageAsBlob(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Échec du téléchargement');
-        return await response.blob();
-    } catch (error) {
-        console.error('Erreur téléchargement image:', error);
-        return null;
-    }
+// Télécharger une image en blob (avec contournement CORS via Canvas)
+async function downloadImageAsBlob(url, filename) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = function() {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        console.error('Impossible de créer le blob pour:', filename);
+                        resolve(null);
+                    }
+                }, 'image/webp', 0.95);
+            } catch (error) {
+                console.error('Erreur lors de la conversion canvas:', filename, error);
+                resolve(null);
+            }
+        };
+        
+        img.onerror = function() {
+            console.error('Erreur de chargement de l\'image:', filename);
+            resolve(null);
+        };
+        
+        // Ajouter un timestamp pour éviter le cache
+        img.src = url + '?t=' + Date.now();
+    });
 }
 
 // Télécharger toutes les images
@@ -393,14 +420,11 @@ async function downloadAllImages(type) {
             const imagePath = type === 'characters' ? item.portrait_path : item.image_path;
             const imageUrl = `${CDN_BASE_URL}/500${imagePath}`;
             
-            // Obtenir l'extension du fichier
-            const extension = imagePath.split('.').pop();
-            
-            // Créer le nom de fichier
-            const filename = `${sanitizeFilename(item.name)}.${extension}`;
+            // Créer le nom de fichier (toujours en .webp car on convertit via canvas)
+            const filename = `${sanitizeFilename(item.name)}.webp`;
             
             // Télécharger l'image
-            const blob = await downloadImageAsBlob(imageUrl);
+            const blob = await downloadImageAsBlob(imageUrl, filename);
             if (blob) {
                 folder.file(filename, blob);
                 downloaded++;
