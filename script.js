@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTabs();
     loadCharacters();
     setupInfiniteScroll();
+    setupDownloadButtons();
 });
 
 // Configuration des onglets
@@ -282,5 +283,159 @@ function showError(tab, message) {
     errorDiv.className = 'empty-state';
     errorDiv.innerHTML = `<h3>❌ ${message}</h3>`;
     grid.appendChild(errorDiv);
+}
+
+// Configuration des boutons de téléchargement
+function setupDownloadButtons() {
+    const downloadCharactersBtn = document.getElementById('download-characters-btn');
+    const downloadLocationsBtn = document.getElementById('download-locations-btn');
+    
+    if (downloadCharactersBtn) {
+        downloadCharactersBtn.addEventListener('click', () => downloadAllImages('characters'));
+    }
+    
+    if (downloadLocationsBtn) {
+        downloadLocationsBtn.addEventListener('click', () => downloadAllImages('locations'));
+    }
+}
+
+// Fonction utilitaire pour nettoyer les noms de fichiers
+function sanitizeFilename(name) {
+    // Remplacer les caractères spéciaux par des underscores
+    return name
+        .replace(/[<>:"/\\|?*]/g, '_')
+        .replace(/\s+/g, '_')
+        .replace(/_{2,}/g, '_')
+        .trim();
+}
+
+// Charger toutes les données d'un type (sans pagination)
+async function loadAllData(type) {
+    let allData = [];
+    let page = 1;
+    let hasMore = true;
+    
+    while (hasMore) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/${type}?page=${page}`);
+            const data = await response.json();
+            const results = data.results || [];
+            
+            if (results.length === 0) {
+                hasMore = false;
+            } else {
+                allData.push(...results);
+                page++;
+            }
+        } catch (error) {
+            console.error(`Erreur lors du chargement de la page ${page}:`, error);
+            hasMore = false;
+        }
+    }
+    
+    return allData;
+}
+
+// Télécharger une image en blob
+async function downloadImageAsBlob(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Échec du téléchargement');
+        return await response.blob();
+    } catch (error) {
+        console.error('Erreur téléchargement image:', error);
+        return null;
+    }
+}
+
+// Télécharger toutes les images
+async function downloadAllImages(type) {
+    const button = document.getElementById(`download-${type}-btn`);
+    const originalText = button.innerHTML;
+    
+    try {
+        // Désactiver le bouton
+        button.disabled = true;
+        button.innerHTML = '<span>⏳</span> Chargement des données...';
+        
+        // Charger toutes les données
+        const allData = await loadAllData(type);
+        
+        if (allData.length === 0) {
+            alert('Aucune donnée à télécharger');
+            return;
+        }
+        
+        // Filtrer les éléments avec images
+        const itemsWithImages = allData.filter(item => {
+            if (type === 'characters') {
+                return item.portrait_path;
+            } else if (type === 'locations') {
+                return item.image_path;
+            }
+            return false;
+        });
+        
+        if (itemsWithImages.length === 0) {
+            alert('Aucune image à télécharger');
+            return;
+        }
+        
+        button.innerHTML = `<span>⏳</span> Téléchargement de ${itemsWithImages.length} images...`;
+        
+        // Créer un fichier ZIP
+        const zip = new JSZip();
+        const folder = zip.folder(type === 'characters' ? 'personnages' : 'lieux');
+        
+        // Télécharger toutes les images
+        let downloaded = 0;
+        for (const item of itemsWithImages) {
+            const imagePath = type === 'characters' ? item.portrait_path : item.image_path;
+            const imageUrl = `${CDN_BASE_URL}/500${imagePath}`;
+            
+            // Obtenir l'extension du fichier
+            const extension = imagePath.split('.').pop();
+            
+            // Créer le nom de fichier
+            const filename = `${sanitizeFilename(item.name)}.${extension}`;
+            
+            // Télécharger l'image
+            const blob = await downloadImageAsBlob(imageUrl);
+            if (blob) {
+                folder.file(filename, blob);
+                downloaded++;
+                
+                // Mettre à jour le bouton
+                button.innerHTML = `<span>⏳</span> Téléchargement... ${downloaded}/${itemsWithImages.length}`;
+            }
+        }
+        
+        if (downloaded === 0) {
+            alert('Échec du téléchargement des images');
+            return;
+        }
+        
+        button.innerHTML = '<span>📦</span> Création du fichier ZIP...';
+        
+        // Générer le ZIP
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        
+        // Télécharger le fichier ZIP
+        const zipFilename = type === 'characters' ? 'simpsons_personnages.zip' : 'simpsons_lieux.zip';
+        saveAs(zipBlob, zipFilename);
+        
+        button.innerHTML = '<span>✅</span> Téléchargement terminé !';
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Erreur lors du téléchargement:', error);
+        alert('Une erreur est survenue lors du téléchargement');
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
 }
 

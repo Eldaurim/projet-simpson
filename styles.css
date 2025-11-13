@@ -95,6 +95,48 @@ header p {
     display: block;
 }
 
+/* Download Section */
+.download-section {
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.download-all-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 12px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.download-all-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.download-all-btn:active {
+    transform: translateY(0);
+}
+
+.download-all-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.download-all-btn span {
+    font-size: 1.2em;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
