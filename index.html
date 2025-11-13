@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Simpsons API - Explorateur</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🍩 The Simpsons Universe</h1>
+            <p>Explorez l'univers de Springfield</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <nav class="tabs">
+            <button class="tab-button active" data-tab="characters">
+                <span>👥</span> Personnages
+            </button>
+            <button class="tab-button" data-tab="episodes">
+                <span>📺</span> Épisodes
+            </button>
+            <button class="tab-button" data-tab="locations">
+                <span>🏠</span> Lieux
+            </button>
+        </nav>
+
+        <div class="tab-content active" id="characters">
+            <div class="grid" id="characters-grid"></div>
+            <div class="loader" id="characters-loader">
+                <div class="spinner"></div>
+                <p>Chargement des personnages...</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="episodes">
+            <div class="grid" id="episodes-grid"></div>
+            <div class="loader" id="episodes-loader">
+                <div class="spinner"></div>
+                <p>Chargement des épisodes...</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="locations">
+            <div class="grid" id="locations-grid"></div>
+            <div class="loader" id="locations-loader">
+                <div class="spinner"></div>
+                <p>Chargement des lieux...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Données provenant de <a href="https://thesimpsonsapi.com" target="_blank">The Simpsons API</a></p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
